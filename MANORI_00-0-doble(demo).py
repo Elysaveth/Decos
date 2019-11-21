@@ -1,18 +1,24 @@
 import numpy as np
 from eccodes import *
 from os import listdir
+from os.path import isfile, join
 
 import sys
 
 def get_data():
 
-    for file in sorted(listdir("./gribs")):
-        f = open("./gribs/" + file, 'rb')
+    datafiles = [f for f in listdir("./gribs") if isfile(join("./gribs", f))]
+    for file in datafiles:
+        if file.startswith("ECMWF_REE_d0007_01.") != True:
+            pass
+        grib = open("./gribs/" + file, 'rb')
         i = 0
         data_u = []
         data_v = []
         while 1:
-            gid = codes_grib_new_from_file(f)
+            gid = codes_grib_new_from_file(grib)
+            if not gid:
+                break
             if i > 1:
                 data_u = np.array(data_u).reshape(35,28,1)
                 data_v = np.array(data_v).reshape(35,28,1)
@@ -40,7 +46,7 @@ def get_data():
 
             codes_grib_iterator_delete(iterid)
             codes_release(gid)
-        f.close()
+        grib.close()
         try:
             matrix = np.concatenate((matrix, data))
         except:
@@ -49,4 +55,4 @@ def get_data():
 
 if __name__ == "__main__":
     results = get_data()
-    sys.exit(print(results, results.shape, sep="\n"))
+    sys.exit(print(results, results.shape))
