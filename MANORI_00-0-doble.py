@@ -1,0 +1,46 @@
+import numpy as np
+from eccodes import *
+from os import listdir
+
+def get_data():
+
+    for file in sorted(listdir("./gribs")):
+        f = open("./gribs/" + file, 'rb')
+        i = 0
+        data_u = []
+        data_v = []
+        while 1:
+            gid = codes_grib_new_from_file(f)
+            if i > 1:
+                data_u = np.array(data_u).reshape(35,28,1)
+                data_v = np.array(data_v).reshape(35,28,1)
+                data = np.concatenate((data_u, data_v), axis=2)
+                data = data.reshape(1,35,28,2)
+                codes_release(gid)
+                break
+
+            iterid = codes_grib_iterator_new(gid, 0)
+            while 1:
+                result = codes_grib_iterator_next(iterid)
+                if not result:
+                    break
+
+                [lat, lon, value] = result
+                lat = round(lat, 2)
+                lon = round(lon, 2)
+                if lat <= 41.4 and lat >= 38.0 and lon >= -3.6 and lon <= -0.9:
+                    if i % 2:
+                        data_v.append(value)
+                    else:
+                        data_u.append(value)
+
+            i += 1
+
+            codes_grib_iterator_delete(iterid)
+            codes_release(gid)
+        f.close()
+        try:
+            matrix = np.concatenate((matrix, data))
+        except:
+            matrix = data
+    return (matrix)
